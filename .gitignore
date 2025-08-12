@@ -1,0 +1,12 @@
+# Docker volumes and temporary files
+mysql_data/
+*.log
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Build files
+*.o
+*.out
+*.exe

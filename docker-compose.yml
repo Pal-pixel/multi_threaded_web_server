@@ -1,0 +1,32 @@
+version: "3.9"
+services:
+  cpp-server:
+    build:
+      context: .
+      dockerfile: docker/cpp-server/Dockerfile
+    volumes:
+      - ./src:/app/src
+      - ./include:/app/include
+      - ./www:/app/www
+      - ./config:/app/config
+    stdin_open: true
+    tty: true
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_server
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: webserver_db
+      MYSQL_USER: webuser
+      MYSQL_PASSWORD: webpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
