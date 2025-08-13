@@ -5,10 +5,8 @@ services:
       context: .
       dockerfile: docker/cpp-server/Dockerfile
     volumes:
-      - ./src:/app/src
-      - ./include:/app/include
-      - ./www:/app/www
-      - ./config:/app/config
+      - .:/app
+
     stdin_open: true
     tty: true
     depends_on:
