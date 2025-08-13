@@ -1,6 +1,8 @@
 # Docker volumes and temporary files
 mysql_data/
 *.log
+# Ignore local configs with secrets
+config/mysql.conf
 
 # OS-specific files
 .DS_Store
