@@ -140,6 +140,52 @@ MIT License
 
 ---
 
+
+You’re right—my bad. Your flow is:
+
+1. run the Makefile → 2) run `./server` → 3) hit it with curl.
+   Here’s the exact, minimal sequence:
+
+2. Build
+
+```bash
+make clean && make
+```
+
+2. Run the server
+
+```bash
+./server
+```
+
+You should see:
+
+```
+✅ Server listening on http://localhost:8080
+```
+
+3. Test from another terminal
+
+```bash
+curl -i http://localhost:8080
+```
+
+You should get a `200 OK` with your HTML body. The server terminal will print the request.
+
+Quick fixes if something blocks you:
+
+* **Address already in use**: a previous server is running. Kill it:
+
+  ```bash
+  pkill -f ./server
+  ```
+
+  then run `./server` again.
+* **No response**: make sure you’re curling the same machine the server runs on (and port `8080`).
+
+Once you confirm this works, say **“Step 1 complete”** and I’ll plug in the queue (no behavior change yet—just routing requests through FIFO).
+
+
 If you push this version to GitHub now, anyone cloning your repo can bring up the environment and confirm MySQL connectivity without asking you how.  
 
 Do you want me to also include **a small connection test C++ program** in `/src` so that the first time you run the container, it can already demonstrate talking to MySQL? That could make verification even easier before we start Step 5.
