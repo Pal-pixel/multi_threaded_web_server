@@ -1,51 +1,5 @@
 
 
----
-
-```markdown
-# Multi-Threaded Web Server (C++ with Docker)
-
-## Overview
-This project is a custom multi-threaded web server implemented in C++, designed to serve static and dynamic content.  
-The development environment runs entirely inside Docker containers, including the server and database (MySQL).
-
----
-
-## Features
-- C++ multi-threaded web server core
-- Thread pool, job queue, buffering, and caching support
-- MySQL database for dynamic site support
-- Fully Dockerized environment
-- Easy to extend and configure
-
----
-
-## Project Structure
-```
-
-project-root/
-│
-├── docker-compose.yml       # Defines cpp-server & mysql services
-├── docker/
-│   ├── cpp-server/
-│   │   └── Dockerfile       # C++ dev container build instructions
-│   └── mysql/
-│       └── custom.cnf       # MySQL config (optional)
-├── mysql\_data/              # MySQL persistent storage (auto-created)
-├── .gitignore
-└── README.md
-
-````
-
----
-
-## Development Environment Setup
-
-### **1. Clone the repository**
-```bash
-git clone <your-repo-url>
-cd multi-threaded-webserver
-````
 
 ### **2. Build and start containers**
 
