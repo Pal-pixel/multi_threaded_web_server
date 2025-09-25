@@ -28,3 +28,4 @@ bool TaskQueue<T>::empty() {
 // Explicit template instantiation (for common types, e.g. int or std::string)
 template class TaskQueue<int>;
 template class TaskQueue<std::string>;
+template class TaskQueue<std::function<void()>>;   // Needed for ThreadPool

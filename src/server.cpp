@@ -1,3 +1,5 @@
+#include "queue.hpp"
+#include "thread_pool.hpp"
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -9,6 +11,10 @@
 
 int main() {
     const int PORT = 8080;
+
+    // 0) Create task queue and thread pool
+    TaskQueue<ThreadPool::Task> taskQueue;
+    ThreadPool pool(std::thread::hardware_concurrency(), taskQueue);
 
     // 1) Create socket
     int server_fd = ::socket(AF_INET, SOCK_STREAM, 0);
@@ -33,7 +39,7 @@ int main() {
     }
 
     // 4) Listen
-    if (listen(server_fd, 1) < 0) {
+    if (listen(server_fd, 10) < 0) {
         perror("listen");
         return 1;
     }
@@ -50,41 +56,44 @@ int main() {
             continue;
         }
 
-        // 6) Read request
-        char buf[4096];
-        ssize_t n = ::read(cfd, buf, sizeof(buf) - 1);
-        if (n <= 0) {
+        // 6) Instead of handling here, push task into thread pool queue
+        taskQueue.push([cfd] {
+            // 6a) Read request
+            char buf[4096];
+            ssize_t n = ::read(cfd, buf, sizeof(buf) - 1);
+            if (n <= 0) {
+                ::close(cfd);
+                return;
+            }
+            buf[n] = '\0';
+            std::cout << "---- request begin ----\n" << buf << "---- request end ----\n";
+
+            // 7) Load index.html from disk
+            std::ifstream file("www/index.html");
+            std::string body;
+            if (file) {
+                body.assign((std::istreambuf_iterator<char>(file)),
+                            std::istreambuf_iterator<char>());
+            } else {
+                body = "<html><body><h1>File not found</h1></body></html>";
+            }
+
+            // 8) Build HTTP response
+            std::string headers =
+                "HTTP/1.1 200 OK\r\n"
+                "Content-Type: text/html; charset=utf-8\r\n"
+                "Connection: close\r\n"
+                "Content-Length: " + std::to_string(body.size()) + "\r\n"
+                "\r\n";
+
+            std::string resp = headers + body;
+
+            // 9) Send response
+            ::write(cfd, resp.c_str(), resp.size());
+
+            // 10) Close client
             ::close(cfd);
-            continue;
-        }
-        buf[n] = '\0';
-        std::cout << "---- request begin ----\n" << buf << "---- request end ----\n";
-
-        // 7) Load index.html from disk
-        std::ifstream file("www/index.html");
-        std::string body;
-        if (file) {
-            body.assign((std::istreambuf_iterator<char>(file)),
-                        std::istreambuf_iterator<char>());
-        } else {
-            body = "<html><body><h1>File not found</h1></body></html>";
-        }
-
-        // 8) Build HTTP response
-        std::string headers =
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/html; charset=utf-8\r\n"
-            "Connection: close\r\n"
-            "Content-Length: " + std::to_string(body.size()) + "\r\n"
-            "\r\n";
-
-        std::string resp = headers + body;
-
-        // 9) Send response
-        ::write(cfd, resp.c_str(), resp.size());
-
-        // 10) Close client
-        ::close(cfd);
+        });
     }
 
     ::close(server_fd);
