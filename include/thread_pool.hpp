@@ -1,27 +1,23 @@
-// thread_pool.hpp
 #pragma once
+#include "task_queue.hpp"
 #include <thread>
 #include <vector>
-#include <functional>
-#include <atomic>
-#include "queue.hpp"
 
-// ThreadPool: pulls tasks from a TaskQueue and executes them
 class ThreadPool {
 public:
-    using Task = std::function<void()>;
-
-    ThreadPool(size_t numThreads, TaskQueue<Task>& q);
+    explicit ThreadPool(size_t numThreads);
     ~ThreadPool();
 
-    // Prevent copying (thread pools should not be copyable)
-    ThreadPool(const ThreadPool&) = delete;
-    ThreadPool& operator=(const ThreadPool&) = delete;
+    // push a task into the queue
+    void submit(TaskQueue::Task t);
+
+    // stop the pool and join threads
+    void shutdown();
 
 private:
-    void workerLoop();  // each worker runs this
+    void workerLoop();
 
-    TaskQueue<Task>& queue;
-    std::vector<std::thread> workers;
-    std::atomic<bool> stop;
+    TaskQueue queue_;
+    std::vector<std::thread> workers_;
+    std::atomic<bool> stopping_{false};
 };

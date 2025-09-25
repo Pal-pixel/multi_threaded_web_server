@@ -1,46 +1,46 @@
-// thread_pool.cpp
 #include "thread_pool.hpp"
+#include <iostream>
 
-ThreadPool::ThreadPool(size_t numThreads, TaskQueue<Task>& q)
-    : queue(q), stop(false)
-{
+ThreadPool::ThreadPool(size_t numThreads) {
+    if (numThreads == 0) numThreads = 1;
+    workers_.reserve(numThreads);
     for (size_t i = 0; i < numThreads; ++i) {
-        workers.emplace_back([this] { workerLoop(); });
-    }
-}
-
-void ThreadPool::workerLoop() {
-    while (true) {
-        if (stop) break;
-
-        // Get the next task from the queue (blocks until available)
-        Task task = queue.pop();
-
-        // Defensive: skip if task is empty (e.g., shutdown signal)
-        if (!task) continue;
-
-        // Process the task
-        try {
-            task();
-        } catch (const std::exception& e) {
-            // catch exceptions to prevent worker from dying
-            fprintf(stderr, "Worker caught exception: %s\n", e.what());
-        } catch (...) {
-            fprintf(stderr, "Worker caught unknown exception\n");
-        }
+        workers_.emplace_back([this] { workerLoop(); });
     }
 }
 
 ThreadPool::~ThreadPool() {
-    stop = true;
+    shutdown();
+}
 
-    // Push dummy tasks to wake all workers so they can exit
-    for (size_t i = 0; i < workers.size(); ++i) {
-        queue.push([] {});
+void ThreadPool::submit(TaskQueue::Task t) {
+    queue_.push(std::move(t));
+}
+
+void ThreadPool::shutdown() {
+    bool expected = false;
+    if (!stopping_.compare_exchange_strong(expected, true)) return; // already stopped
+    queue_.shutdown();
+
+    for (auto& th : workers_) {
+        if (th.joinable()) th.join();
     }
+}
 
-    for (auto& t : workers) {
-        if (t.joinable())
-            t.join();
+void ThreadPool::workerLoop() {
+    while (!stopping_) {
+        auto task = queue_.pop();
+        if (!task) {
+            // either shutdown or spurious - check stopping
+            if (stopping_) break;
+            else continue;
+        }
+        try {
+            task();
+        } catch (const std::exception& e) {
+            std::cerr << "Worker caught exception: " << e.what() << '\n';
+        } catch (...) {
+            std::cerr << "Worker caught unknown exception\n";
+        }
     }
 }
